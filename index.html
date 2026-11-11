@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#092725">
+  <meta name="description" content="Phone-first AR waypoint experiment for a future fishing trail navigator.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <title>Fishing AR Lab — Device Testing Prototype</title>
+  <style>
+  :root{--ink:#eaf8f2;--muted:#b8ceca;--accent:#bafa92;--cyan:#8bdce7;--card:rgba(9,38,39,.88);--line:rgba(226,255,247,.15);--warn:#ffd797}
+  *{box-sizing:border-box}html{height:100%;background:#071f23}body{margin:0;min-height:100%;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:#071f23}
+  button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:3px solid #cdf9a9;outline-offset:2px}
+  .shell{max-width:540px;margin:0 auto;min-height:100svh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);position:relative;background:#082c30}
+  .scene{height:53svh;min-height:390px;max-height:640px;position:relative;overflow:hidden;background:radial-gradient(circle at 80% 14%,#83af9b 0 9%,transparent 30%),linear-gradient(180deg,#305b5c 0%,#3e6b63 36%,#315b49 37%,#204738 57%,#173d3b 57%,#0e292d 100%)}
+  .scene:before{content:"";position:absolute;inset:35% -20% 0;background:linear-gradient(155deg,transparent 20%,rgba(10,48,40,.6) 20.2% 27%,transparent 27.2%),linear-gradient(20deg,transparent 25%,rgba(6,49,42,.65) 25.2% 38%,transparent 38.2%);opacity:.8}
+  .scene:after{content:"";position:absolute;bottom:-10%;left:30%;width:40%;height:58%;background:linear-gradient(180deg,rgba(240,225,178,.2),rgba(212,178,110,.48));clip-path:polygon(43% 0,57% 0,100% 100%,0 100%);filter:blur(3px);opacity:.5}
+  video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;transform:scaleX(1)}
+  video.on{display:block}.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(1,16,22,.7) 0,transparent 38%,transparent 65%,rgba(3,22,23,.88) 100%);pointer-events:none}
+  .top{position:absolute;top:15px;left:17px;right:17px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;z-index:2}.top h1{font-size:17px;letter-spacing:.1px;margin:0;font-weight:750}.eyebrow{color:var(--accent);font-size:10px;letter-spacing:2px;font-weight:800;text-transform:uppercase;margin:0 0 3px}
+  .tag{border:1px solid rgba(255,255,255,.25);background:rgba(3,31,34,.68);backdrop-filter:blur(12px);border-radius:99px;padding:7px 10px;font-size:11px;font-weight:850;letter-spacing:.6px;white-space:nowrap}.tag.live{color:var(--accent)}.tag.demo{color:var(--warn)}.tag.pending{color:var(--warn)}.tag.blocked{color:#ffc5b7}
+  .direction{position:absolute;z-index:2;top:31%;left:50%;transform:translate(-50%,-10%);width:min(80%,300px);text-align:center}
+  .ring{width:154px;height:154px;margin:0 auto 11px;border:1px solid rgba(255,255,255,.3);border-radius:50%;display:grid;place-items:center;background:rgba(5,42,39,.27);box-shadow:0 0 0 9px rgba(255,255,255,.045),inset 0 0 35px rgba(5,20,24,.3);position:relative;backdrop-filter:blur(4px)}
+  .ring:before,.ring:after{content:"";position:absolute;background:rgba(255,255,255,.25)}.ring:before{height:1px;width:30px;left:-15px;top:50%}.ring:after{height:1px;width:30px;right:-15px;top:50%}
+  #arrow{width:94px;height:94px;filter:drop-shadow(0 4px 15px rgba(136,254,148,.4));transition:transform .25s ease-out;transform:rotate(48deg)}
+  #directionText{font-size:24px;font-weight:850;line-height:1.1;text-shadow:0 2px 12px #123;margin:0 0 5px}.dist{font-variant-numeric:tabular-nums;color:#e9f9eb;font-size:19px;font-weight:740;margin:0}.micro{font-size:12px;color:#d7e6df;margin-top:4px}
+  .scene-bottom{position:absolute;bottom:16px;left:16px;right:16px;z-index:2;display:flex;gap:8px;align-items:stretch}.scene-stat{flex:1;min-width:0;background:rgba(5,34,36,.72);border:1px solid var(--line);border-radius:14px;padding:10px;backdrop-filter:blur(8px)}.scene-stat b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.scene-stat small{display:block;color:#c1d6d2;font-size:10px;letter-spacing:.3px;margin-top:2px}
+  .panel{padding:18px 17px 28px;background:linear-gradient(180deg,#103436,#071e25);border-top:1px solid rgba(255,255,255,.08)}.mode-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;gap:10px}.mode-title strong{font-size:16px}.sub{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 15px}
+  .seg{display:flex;gap:4px;border-radius:13px;padding:4px;background:#09282d;border:1px solid var(--line);margin-bottom:14px}.seg button{flex:1;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:13px;font-weight:800;padding:11px 6px}.seg button.selected{background:var(--accent);color:#103129}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}.btn{border:1px solid var(--line);background:#1b4243;color:var(--ink);padding:12px 11px;border-radius:13px;font-size:13px;font-weight:740;min-height:46px}.btn.primary{background:var(--accent);color:#15392e;border-color:transparent}.btn.secondary{background:rgba(255,255,255,.06)}.btn:disabled{opacity:.4;cursor:not-allowed}
+  .card{border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.045);padding:14px;margin-top:12px}.card h2{font-size:14px;margin:0 0 8px}.card p{font-size:12px;line-height:1.55;color:var(--muted);margin:6px 0}.readout{display:grid;grid-template-columns:1fr 1fr;gap:8px}.readout>div{background:#0c2a2f;border-radius:11px;padding:10px}.readout span{color:var(--muted);display:block;font-size:11px}.readout strong{font-size:14px;display:block;font-variant-numeric:tabular-nums;margin-top:3px}
+  .controls{display:none}.controls.active{display:block}label{display:block;font-size:12px;font-weight:800;margin:12px 0 5px}input[type=range]{width:100%;accent-color:var(--accent)}input[type=text],input[type=number]{width:100%;border:1px solid #4d7071;border-radius:10px;padding:11px 12px;background:#09272d;color:#fff;min-width:0}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tiny{font-size:11px;color:#b9d2ca}.status{border-left:3px solid var(--cyan);padding:9px 11px;background:#09292d;border-radius:0 9px 9px 0;color:#d1e6e0;font-size:12px;line-height:1.5;margin:12px 0}.status.error{border-color:#f7b19a}.status.ok{border-color:var(--accent)}
+  ul.spots{list-style:none;margin:8px 0 0;padding:0}.spots li{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:9px 0;border-bottom:1px solid var(--line)}.spots .item{min-width:0}.spots b{display:block;font-size:12px;overflow-wrap:anywhere}.spots small{font-size:10px;color:var(--muted)}.spots button{padding:8px;border-radius:9px;border:1px solid #476463;background:#1c4547;color:#fff;font-size:11px}.spots button.delete{color:#ffd5cf}
+  .research{display:flex;gap:10px;flex-wrap:wrap}.research a{color:var(--accent);font-weight:750;font-size:12px;text-decoration:underline;text-underline-offset:3px}.foot{margin:18px 0 4px;font-size:11px;line-height:1.55;color:#a6c2bf}
+
+  .community-intro{border:1px solid rgba(186,250,146,.32);padding:12px;border-radius:14px;background:rgba(186,250,146,.07);font-size:12px;line-height:1.5;color:#deeedc}
+  .community-intro b{color:var(--accent)}.community-title{font-size:18px;margin:24px 0 9px}.community-form{display:grid;gap:5px}.community-form textarea,.comment-form textarea{resize:vertical;width:100%;min-height:68px;background:#09272d;color:white;border:1px solid #4d7071;border-radius:10px;padding:11px 12px;font:inherit;font-size:13px}
+  .community-form select,.report-reason{width:100%;background:#09272d;color:white;border:1px solid #4d7071;border-radius:10px;padding:11px 12px;font:inherit;font-size:13px}
+  .community-form textarea:focus-visible,.comment-form textarea:focus-visible,.community-form select:focus-visible,.report-reason:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .feed{display:grid;gap:12px;margin-top:12px}.feed-card{background:rgba(255,255,255,.045);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .feed-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.feed-head b{font-size:14px}.feed-head small{color:#bed8cf;font-size:11px}.pill{display:inline-block;padding:3px 7px;border:1px solid #608278;border-radius:99px;font-size:10px;color:#cbe2d7;font-weight:800}.pill.demo-pill{border-color:#bfa570;color:#ffdfa8}
+  .feed-card p{font-size:12px;color:#d4e9df;line-height:1.6;margin:9px 0}.feed-actions{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 0}
+  .feed-actions button,.comment-form button,.remove-post{border:1px solid #52756e;background:#133f43;border-radius:9px;padding:8px 10px;color:#f0faf4;font-size:12px;font-weight:700;min-height:38px}
+  .feed-actions button.pressed{background:var(--accent);color:#103129;border-color:var(--accent)}.comment-item{border-left:2px solid #6f958a;padding:4px 0 4px 9px;margin:9px 0;font-size:12px;color:#d9eee6;overflow-wrap:anywhere}
+  .comment-item small{display:block;color:#adc9c2;margin-bottom:3px}.comment-form{display:grid;gap:7px;margin-top:8px}.comment-form button{justify-self:end}.flagged{color:#ffe1a3;font-size:11px;margin-top:9px}
+  .feed-empty{font-size:12px;color:var(--muted)}.community-caption{font-size:11px;color:var(--muted);line-height:1.6}
+  @media(min-width:600px){.shell{box-shadow:0 0 100px #0008}.scene{height:55vh}}
+  </style>
+</head>
+<body>
+<main class="shell">
+<section class="scene" aria-label="Augmented directional guidance preview">
+ <video id="camera" autoplay muted playsinline></video><div class="shade"></div>
+ <div class="top"><div><p class="eyebrow">Prototype 0.3 · Fishing AR Lab</p><h1>Waypoint Navigator</h1></div><div id="modeBadge" class="tag demo">● DEMO</div></div>
+ <div class="direction"><div class="ring"><svg id="arrow" viewBox="0 0 100 100" role="img" aria-label="Direction arrow"><path d="M50 3L95 65 63 57 63 94 37 94 37 57 5 65Z" fill="#bafa92" stroke="#102f28" stroke-width="3" stroke-linejoin="round"/></svg></div><h2 id="directionText">Turn right</h2><p id="distanceText" class="dist">280 ft away</p><div id="signalText" class="micro">Simulated guidance · not a real route</div></div>
+ <div class="scene-bottom"><div class="scene-stat"><b id="targetTitle">Practice waypoint</b><small>Selected destination</small></div><div class="scene-stat"><b id="headingTitle">—</b><small>Compass heading</small></div></div>
+</section>
+<section class="panel">
+ <div class="mode-title"><strong>Navigation controls</strong><span class="tiny">Free · no account · local data</span></div>
+ <div class="seg" role="group" aria-label="Choose demonstration or live navigation"><button id="demoBtn" class="selected" aria-pressed="true">Demo mode</button><button id="liveBtn" aria-pressed="false">My GPS</button></div>
+ <p class="sub" id="modeHelp">Explore the interface without permissions. Adjust the simulated direction below to see how the arrow responds.</p>
+ <div class="actions"><button class="btn primary" id="cameraBtn">📷 Start camera</button><button class="btn" id="gpsBtn">◎ Enable GPS</button></div>
+ <div class="status" id="status" role="status" aria-live="polite">Demo mode is active. The distance and direction are fictional practice values.</div>
+ <div class="card" id="deviceCheck"><h2>Device readiness · v0.3</h2><div class="readout"><div><span>Page connection</span><strong id="connectionValue">Checking…</strong></div><div><span>Camera</span><strong id="cameraValue">Off</strong></div><div><span>GPS</span><strong id="gpsValue">Not started</strong></div><div><span>Compass</span><strong id="headingStatus">Not started</strong></div></div><p id="httpsHelp">Demo and community buttons work from a downloaded file. Real camera, GPS, and sensors need an HTTPS-hosted version and browser permissions. No hosting or location uploads are included.</p></div>
+ <div id="demoControls" class="card controls active"><h2>Practice the directional arrow</h2><label for="demoHeading">Simulated direction your phone faces: <span id="demoAngleText">0°</span></label><input type="range" min="0" max="359" step="1" value="0" id="demoHeading"><label for="demoDistance">Simulated distance: <span id="demoDistText">280 ft</span></label><input type="range" min="20" max="1800" step="10" value="280" id="demoDistance"><p>Try rotating the direction slider. The destination is simulated at 70° northeast; the arrow rotates relative to your simulated heading.</p></div>
+ <div id="liveControls" class="controls">
+   <div class="card"><h2>Live device readings</h2><div class="readout"><div><span>GPS accuracy</span><strong id="accuracyValue">Not available</strong></div><div><span>Phone heading</span><strong id="compassValue">Not available</strong></div></div><p>Use outdoors in a safe, open place for clearer location and compass readings. Device heading may need calibration and varies by browser.</p></div>
+   <div class="card"><h2>Choose a real destination</h2><p>Save the location you're standing at, or paste decimal GPS coordinates of a location you have verified is publicly accessible.</p><label for="spotName">Waypoint name</label><input type="text" id="spotName" maxlength="48" placeholder="My fishing spot"><div class="row"><div><label for="latitude">Latitude</label><input type="number" id="latitude" step="any" min="-90" max="90" placeholder="39.00000"></div><div><label for="longitude">Longitude</label><input type="number" id="longitude" step="any" min="-180" max="180" placeholder="-76.00000"></div></div><div class="actions" style="margin-top:12px;margin-bottom:0"><button class="btn primary" id="addCoords">Save coordinates</button><button class="btn secondary" id="saveHere">Save my position</button></div><p>Saved waypoints stay only in this browser on this device.</p><ul class="spots" id="savedSpots"><li><span class="tiny">No saved waypoints yet.</span></li></ul></div>
+ </div>
+
+ <h2 class="community-title" id="communityTitle">Community Fishing Spots · Local demo</h2>
+ <div class="community-intro"><b>Private test mode — nothing here is public.</b> Try likes, dislikes, comments, and reports. They are saved only in this browser, not shared with other anglers. Sample reports are fictional examples. This feature does not verify access, safety, fishing conditions, or routes.</div>
+ <div class="card"><h2>Add a practice fishing report</h2><div class="community-form">
+   <label for="reportTitle">Report title</label><input id="reportTitle" type="text" maxlength="70" placeholder="Example: Shoreline observation">
+   <label for="reportPlace">General area (do not enter private coordinates)</label><input id="reportPlace" type="text" maxlength="70" placeholder="Example: Lake Roland area">
+   <label for="reportType">Category</label><select id="reportType"><option value="Fishing observation">Fishing observation</option><option value="Access note">Access note</option><option value="Species information">Species information</option><option value="Environmental note">Environmental note</option></select>
+   <label for="reportBody">Details</label><textarea id="reportBody" maxlength="500" placeholder="Share an observation. Avoid exact private spots and unverified claims of safe access."></textarea>
+   <button id="publishLocal" class="btn primary" style="margin-top:8px">Save report to this device</button>
+   <div id="communityStatus" class="tiny" role="status" aria-live="polite">Reports and comments are private practice data, stored on this device only.</div>
+ </div></div>
+ <div id="communityFeed" class="feed" aria-label="Practice fishing reports"></div>
+ <p class="community-caption"><b>Future public community:</b> Will require accounts, abuse reporting to a real moderator, privacy controls, content moderation, safe-access rules and an appropriate legal review. Voting is an opinion indicator, not proof that a location is safe or accurate.</p>
+ <div class="card"><h2>Research layers — next stage</h2><p><b>Lake Roland trails:</b> official park trail maps are available. <b>Loch Raven water contours:</b> historical depth maps and data exist, but the geological survey cautions they are not suitable for navigation. Neither dataset is integrated into this prototype.</p><div class="research"><a target="_blank" rel="noopener noreferrer" href="https://www.lakeroland.org/trail-maps/">Lake Roland trail maps</a><a target="_blank" rel="noopener noreferrer" href="https://www.mgs.md.gov/coastal_geology/lochraven.html">Loch Raven depth research</a></div></div>
+ <p class="foot"><b>Early experiment, not a navigation or boating instrument.</b> This arrow points toward a coordinate as the crow flies. It does not identify trails, obstacles, private property, safe water, or a walkable route. Never follow it into water or off an established trail. Phone-camera AR here is a 2D overlay; accurate world-anchored 3D graphics are planned for a later native ARCore version. Camera, GPS, saved spots, and community-demo activity are processed locally; no location or community information is uploaded by this prototype.</p>
+</section></main>
+<script>
+(()=>{'use strict';
+ const $=id=>document.getElementById(id),rad=x=>x*Math.PI/180,wrap=x=>(x%360+360)%360;
+ const state={mode:'demo',cameraStream:null,location:null,heading:null,target:null,watchId:null,gpsStatus:'Not started',headingStatus:'Not started',cameraStatus:'Off',demoHeading:0,demoDistance:280,demoBearing:70,spots:[]};
+ const secureWeb=()=>{const l=window.location||{};return window.isSecureContext&&(l.protocol==='https:'||(l.protocol==='http:'&&['localhost','127.0.0.1'].includes(l.hostname)));};
+ function readiness(){const ok=secureWeb();$('connectionValue').textContent=ok?'HTTPS / localhost':'Local file';$('gpsValue').textContent=state.gpsStatus;$('cameraValue').textContent=state.cameraStatus;$('headingStatus').textContent=state.headingStatus;$('httpsHelp').textContent=ok?'Connection is ready for browser permission requests. GPS and compass still depend on your phone and permissions. This prototype does not upload GPS coordinates.':'This file is open locally. Demo and practice posts work, but for reliable phone camera, GPS and compass tests, we must serve these files from an HTTPS website. No extra payment is required for static hosting.';const badge=$('modeBadge');if(state.mode==='demo'){badge.textContent='● DEMO';badge.className='tag demo';}else if(state.gpsStatus==='Active'){badge.textContent='● GPS ACTIVE';badge.className='tag live';}else{badge.textContent='● GPS NOT READY';badge.className='tag pending';}}
+ try{state.spots=JSON.parse(localStorage.getItem('fishing-ar-spots')||'[]'); if(!Array.isArray(state.spots))state.spots=[];}catch(_){state.spots=[];}
+
+ function communityInit(){
+  const STORAGE='fishing-ar-community-v02';
+  const demoPosts=[
+   {id:'sample-1',title:'Sample: why shoreline structure matters',place:'Fictional practice area',type:'Fishing observation',body:'DEMO ONLY — A fictional angler describes exploring different shoreline structures. This is not an actual location recommendation.',demo:true,vote:0,comments:[],flag:null},
+   {id:'sample-2',title:'Sample: check local access rules',place:'Fictional park',type:'Access note',body:'DEMO ONLY — Always verify public access, hours, fishing rules and trail conditions with the land manager before visiting.',demo:true,vote:0,comments:[],flag:null}
+  ];
+  let posts;
+  try{posts=JSON.parse(localStorage.getItem(STORAGE)||'null');if(!Array.isArray(posts))throw Error();}catch(_){posts=demoPosts;}
+  // Restrict saved data to the minimum structure used by this client-side demo.
+  posts=posts.filter(p=>p&&typeof p.id==='string'&&typeof p.title==='string').slice(0,200);
+  const safe=t=>String(t||'').slice(0,500);
+  function el(tag,txt,cls){const n=document.createElement(tag);if(txt!==undefined)n.textContent=txt;if(cls)n.className=cls;return n;}
+  function store(){try{localStorage.setItem(STORAGE,JSON.stringify(posts));}catch(_){$('communityStatus').textContent='Could not save practice reports in this browser.';}}
+  function render(){const feed=$('communityFeed');feed.replaceChildren();
+   if(!posts.length){feed.append(el('p','No practice reports yet. Create one above.','feed-empty'));return;}
+   for(const post of posts){
+    const article=el('article',undefined,'feed-card');const head=el('div',undefined,'feed-head');head.append(el('b',safe(post.title)),el('span',safe(post.type),'pill'));
+    if(post.demo)head.append(el('span','FICTIONAL SAMPLE','pill demo-pill'));
+    article.append(head,el('small',safe(post.place),'tiny'),el('p',safe(post.body)));
+    const actions=el('div',undefined,'feed-actions');
+    for(const kind of [1,-1]){const voted=post.vote===kind;const btn=el('button',kind===1?'👍 Like':'👎 Dislike');btn.type='button';btn.classList.toggle('pressed',voted);btn.setAttribute('aria-pressed',String(voted));btn.addEventListener('click',()=>{post.vote=post.vote===kind?0:kind;store();render();});actions.append(btn);}
+    const show=el('button','💬 Comment ('+(Array.isArray(post.comments)?post.comments.length:0)+')');show.type='button';
+    const commentsBox=el('div');commentsBox.hidden=true;
+    show.addEventListener('click',()=>{commentsBox.hidden=!commentsBox.hidden;show.setAttribute('aria-expanded',String(!commentsBox.hidden));});show.setAttribute('aria-expanded','false');actions.append(show);
+    const flag=el('button',post.flag?'🚩 Flagged (local)':'🚩 Report');flag.type='button';flag.addEventListener('click',()=>{
+      if(post.flag){post.flag=null;}else{
+       const reason=window.prompt('Reason for reporting this sample locally? Enter 1 = unsafe access, 2 = inaccurate info, 3 = privacy, 4 = other','1');
+       if(reason===null)return;
+       const reasonName={'1':'Unsafe access','2':'Inaccurate info','3':'Privacy concern','4':'Other'}[reason.trim()];
+       if(!reasonName){$('communityStatus').textContent='Choose a report reason from 1 to 4.';return;}
+       post.flag=reasonName;
+      }
+      store();render();
+    });actions.append(flag);article.append(actions);
+    if(post.flag)article.append(el('p','⚑ Flagged locally: '+safe(post.flag)+'. This was not sent to a moderator.','flagged'));
+    if(!post.demo){const rem=el('button','Delete my practice report','remove-post');rem.type='button';rem.addEventListener('click',()=>{if(window.confirm('Delete this local practice report?')){posts=posts.filter(p=>p.id!==post.id);store();render();}});article.append(rem);}
+    const comments=Array.isArray(post.comments)?post.comments:[];
+    for(const comment of comments.slice(-30)){const box=el('div',undefined,'comment-item');box.append(el('small','Your local comment'),el('span',safe(comment)));commentsBox.append(box);}
+    const form=el('form',undefined,'comment-form');const input=el('textarea');input.maxLength=280;input.rows=2;input.placeholder='Leave a practice comment (max 280 characters)';input.setAttribute('aria-label','Comment on '+safe(post.title));
+    const send=el('button','Add comment');send.type='submit';form.append(input,send);form.addEventListener('submit',e=>{e.preventDefault();const value=input.value.trim();if(!value)return;post.comments=comments.concat(value.slice(0,280)).slice(-30);store();render();});commentsBox.append(form);article.append(commentsBox);feed.append(article);
+   }
+  }
+  $('publishLocal').addEventListener('click',()=>{
+   const title=$('reportTitle').value.trim().slice(0,70),place=$('reportPlace').value.trim().slice(0,70),body=$('reportBody').value.trim().slice(0,500);
+   if(!title||!place||!body){$('communityStatus').textContent='Add a title, general area and details to save your practice report.';return;}
+   posts.unshift({id:'local-'+Date.now()+'-'+Math.random().toString(16).slice(2),title,place,type:$('reportType').value,body,demo:false,vote:0,comments:[],flag:null});
+   $('reportTitle').value='';$('reportPlace').value='';$('reportBody').value='';
+   $('communityStatus').textContent='Saved on this device only. This report is NOT visible to other users.';store();render();
+  });
+  render();
+ }
+ function say(message,kind=''){const e=$('status');e.textContent=message;e.className='status '+kind;}
+ function formatDistance(m){if(!Number.isFinite(m))return '—'; const feet=m*3.28084; return feet>=5280?(feet/5280).toFixed(2)+' mi':Math.round(feet)+' ft';}
+ function bearing(lat1,lon1,lat2,lon2){const d=rad(lon2-lon1),a=rad(lat1),b=rad(lat2);return wrap(Math.atan2(Math.sin(d)*Math.cos(b),Math.cos(a)*Math.sin(b)-Math.sin(a)*Math.cos(b)*Math.cos(d))*180/Math.PI);}
+ function distance(lat1,lon1,lat2,lon2){const a=rad(lat1),b=rad(lat2),dl=rad(lon2-lon1),da=b-a;const h=Math.sin(da/2)**2+Math.cos(a)*Math.cos(b)*Math.sin(dl/2)**2;return 6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));}
+ function turnText(relative){const signed=((relative+540)%360)-180,abs=Math.abs(signed);if(abs<18)return 'Straight ahead';if(abs>160)return 'Turn around';return (signed>0?'Turn right':'Turn left')+' '+Math.round(abs)+'°';}
+ function redraw(){let direction=state.demoBearing,heading=state.demoHeading,distanceM=state.demoDistance/3.28084,has=true;
+  if(state.mode==='live'){
+    has=Boolean(state.location&&state.target);
+    if(has){direction=bearing(state.location.lat,state.location.lon,state.target.lat,state.target.lon);distanceM=distance(state.location.lat,state.location.lon,state.target.lat,state.target.lon);}
+    heading=state.heading;
+  }
+  const relative=heading===null?0:wrap(direction-heading);
+  $('arrow').style.transform='rotate('+relative+'deg)';$('arrow').style.opacity=state.mode==='demo'||(has&&heading!==null)?'1':'.4';
+  $('targetTitle').textContent=state.mode==='demo'?'Practice waypoint':(state.target?state.target.name:'No destination');
+  $('headingTitle').textContent=heading===null?'Unavailable':Math.round(heading)+'°';
+  $('compassValue').textContent=state.heading===null?'Not available':Math.round(state.heading)+'°';
+  $('accuracyValue').textContent=state.location?(Math.round(state.location.accuracy*3.28084)+' ft'):'Not available';
+  if(state.mode==='demo'){$('directionText').textContent=turnText(relative);$('distanceText').textContent=formatDistance(distanceM)+' away';$('signalText').textContent='DEMO · simulated destination';}
+  else if(!has){$('directionText').textContent='Select a waypoint';$('distanceText').textContent='Enable GPS and set destination';$('signalText').textContent=state.location?'Location found · waiting for destination':'GPS location not ready';}
+  else if(heading===null){$('directionText').textContent='Compass unavailable';$('distanceText').textContent=formatDistance(distanceM)+' straight-line';$('signalText').textContent='Heading needed to point arrow correctly';}
+  else{const accuracy=state.location?.accuracy||100;const tooClose=distanceM<=Math.max(15,accuracy);$('directionText').textContent=tooClose?'Within GPS uncertainty':turnText(relative);$('distanceText').textContent=formatDistance(distanceM)+' straight-line';$('signalText').textContent=tooClose?'Do not use for precise arrival; GPS uncertainty ±'+formatDistance(accuracy):'Approximate GPS + compass guidance';}
+ }
+ function setMode(mode){state.mode=mode;const d=mode==='demo';$('demoBtn').classList.toggle('selected',d);$('liveBtn').classList.toggle('selected',!d);$('demoBtn').setAttribute('aria-pressed',String(d));$('liveBtn').setAttribute('aria-pressed',String(!d));$('demoControls').classList.toggle('active',d);$('liveControls').classList.toggle('active',!d);readiness();$('modeHelp').textContent=d?'Explore without permissions. Adjust the simulated direction below to see how the arrow responds.':'Only points toward a coordinate, not along safe trails. Use GPS and a saved destination.';say(d?'Demo mode active: all distance and directional values are simulated.':'Live mode: enable GPS, then save or select a real waypoint.','');redraw();}
+ $('demoBtn').addEventListener('click',()=>setMode('demo'));$('liveBtn').addEventListener('click',()=>setMode('live'));
+ $('demoHeading').addEventListener('input',e=>{state.demoHeading=Number(e.target.value);$('demoAngleText').textContent=state.demoHeading+'°';redraw();});
+ $('demoDistance').addEventListener('input',e=>{state.demoDistance=Number(e.target.value);$('demoDistText').textContent=state.demoDistance+' ft';redraw();});
+ $('cameraBtn').addEventListener('click',async()=>{
+  if(state.cameraStream){state.cameraStream.getTracks().forEach(t=>t.stop());state.cameraStream=null;$('camera').classList.remove('on');$('camera').srcObject=null;$('cameraBtn').textContent='📷 Start camera';state.cameraStatus='Off';readiness();say('Camera stopped.');return;}
+  if(!secureWeb()){state.cameraStatus='Requires HTTPS';readiness();say('Camera preview needs an HTTPS-hosted version, not the extracted index.html file. Demo still works.','error');return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){state.cameraStatus='Unsupported';readiness();say('Camera access is not supported by this browser.','error');return;}
+  try{const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});state.cameraStream=stream;$('camera').srcObject=stream;$('camera').classList.add('on');$('cameraBtn').textContent='◼ Stop camera';state.cameraStatus='Preview active';readiness();say('Camera started. This arrow is a 2D overlay, not an anchored AR object.','ok');}
+  catch(err){state.cameraStatus='Blocked / error';readiness();say('Camera unavailable or permission declined: '+(err.message||err.name),'error');}
+ });
+ async function startCompass(){
+  if(typeof DeviceOrientationEvent==='undefined'){state.headingStatus='Unsupported';readiness();return;}
+  state.headingStatus='Waiting';readiness();
+  try{if(typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted'){state.headingStatus='Permission denied';readiness();return;}}}catch(_){state.headingStatus='Permission error';readiness();return;}
+  if(!state.compassListening){
+   const read=e=>{let h=null;
+    if(Number.isFinite(e.webkitCompassHeading)){h=e.webkitCompassHeading;}
+    else if((e.absolute===true||e.type==='deviceorientationabsolute')&&Number.isFinite(e.alpha)){h=360-e.alpha;}
+    if(h!==null){state.heading=wrap(h);state.headingStatus='Approximate';readiness();redraw();}
+   };
+   window.addEventListener('deviceorientationabsolute',read,true);
+   window.addEventListener('deviceorientation',read,true);
+   state.compassListening=true;
+  }
+ }
+ $('gpsBtn').addEventListener('click',async()=>{
+  setMode('live');
+  if(!secureWeb()){state.gpsStatus='Requires HTTPS';readiness();say('To test live GPS, open this app from an HTTPS web address. Android downloaded-file links do not reliably allow sensors.','error');return;}
+  if(!navigator.geolocation){state.gpsStatus='Unsupported';readiness();say('This browser has no Geolocation API.','error');return;}
+  state.gpsStatus='Requesting';readiness();say('Requesting GPS and compass. Allow location access if prompted.');
+  startCompass();
+  if(state.watchId!==null)navigator.geolocation.clearWatch(state.watchId);
+  state.watchId=navigator.geolocation.watchPosition(pos=>{
+    state.location={lat:pos.coords.latitude,lon:pos.coords.longitude,accuracy:pos.coords.accuracy};state.gpsStatus='Active';readiness();say('GPS active. Estimated accuracy ±'+Math.round(pos.coords.accuracy*3.28084)+' ft. Set a waypoint to see direction.','ok');redraw();
+  },err=>{state.gpsStatus=err.code===1?'Permission denied':'Unavailable';state.location=null;readiness();say('GPS unavailable: '+err.message+'. Check Chrome location permissions and phone Location settings.','error');redraw();},{enableHighAccuracy:true,maximumAge:2000,timeout:20000});
+ });
+ function persist(){try{localStorage.setItem('fishing-ar-spots',JSON.stringify(state.spots));}catch(_){say('Waypoints could not be stored locally in this browser.','error');}renderSpots();}
+ function createSpot(name,lat,lon){if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat < -90||lat >90||lon < -180||lon>180){say('Please enter valid latitude (−90 to 90) and longitude (−180 to 180).','error');return;}const spot={id:Date.now().toString(36)+'-'+Math.floor(Math.random()*1e5).toString(36),name:(name||'Saved waypoint').trim().slice(0,48),lat,lon};state.spots.push(spot);state.target=spot;persist();setMode('live');say('Saved '+spot.name+' on this device and selected it as destination.','ok');redraw();}
+ $('addCoords').addEventListener('click',()=>{let a=$('latitude').value.trim(),b=$('longitude').value.trim();if(!a||!b){say('Both latitude and longitude are required.','error');return;}createSpot($('spotName').value,Number(a),Number(b));});
+ $('saveHere').addEventListener('click',()=>{if(!state.location){say('Enable GPS and get a location fix before saving your current position.','error');return;}createSpot($('spotName').value||'Saved GPS spot',state.location.lat,state.location.lon);});
+ function renderSpots(){const list=$('savedSpots');list.innerHTML='';if(!state.spots.length){const li=document.createElement('li');li.textContent='No saved waypoints yet.';li.className='tiny';list.append(li);return;}for(const spot of state.spots){const li=document.createElement('li'),box=document.createElement('div'),name=document.createElement('b'),coords=document.createElement('small'),choose=document.createElement('button'),del=document.createElement('button');box.className='item';name.textContent=spot.name;coords.textContent=spot.lat.toFixed(5)+', '+spot.lon.toFixed(5);box.append(name,coords);choose.textContent=state.target&&state.target.id===spot.id?'Selected':'Navigate';choose.addEventListener('click',()=>{state.target=spot;renderSpots();setMode('live');say('Navigating toward '+spot.name+'. Straight-line guidance only.','ok');redraw();});del.textContent='Delete';del.className='delete';del.setAttribute('aria-label','Delete '+spot.name);del.addEventListener('click',()=>{state.spots=state.spots.filter(x=>x.id!==spot.id);if(state.target&&state.target.id===spot.id)state.target=null;persist();redraw();});li.append(box,choose,del);list.append(li);}}
+ renderSpots();redraw();readiness();
+ communityInit();
+ if('serviceWorker' in navigator&&secureWeb())navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+ window.addEventListener('pagehide',()=>{if(state.cameraStream)state.cameraStream.getTracks().forEach(t=>t.stop());});
+})();
+</script>
+</body>
+</html>
