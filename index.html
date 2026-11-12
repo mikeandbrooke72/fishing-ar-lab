@@ -45,15 +45,65 @@
   .feed-actions button.pressed{background:var(--accent);color:#103129;border-color:var(--accent)}.comment-item{border-left:2px solid #6f958a;padding:4px 0 4px 9px;margin:9px 0;font-size:12px;color:#d9eee6;overflow-wrap:anywhere}
   .comment-item small{display:block;color:#adc9c2;margin-bottom:3px}.comment-form{display:grid;gap:7px;margin-top:8px}.comment-form button{justify-self:end}.flagged{color:#ffe1a3;font-size:11px;margin-top:9px}
   .feed-empty{font-size:12px;color:var(--muted)}.community-caption{font-size:11px;color:var(--muted);line-height:1.6}
+
+  /* 0.3.1: AR view readability and camera-focused expansion */
+  .scene{height:clamp(500px,77svh,780px)}
+  .direction{
+    top:49%;width:calc(100% - 38px);max-width:450px;
+    transform:translate(-50%,-50%);pointer-events:none
+  }
+  #directionText{font-size:clamp(19px,4.7vw,24px);line-height:1.16}
+  .micro{line-height:1.45;margin:9px auto 0;max-width:360px;overflow-wrap:break-word}
+  .scene-bottom,.top{pointer-events:none}
+  .scene-toggle{
+    position:absolute;right:16px;top:73px;z-index:6;
+    border:1px solid rgba(229,255,237,.42);border-radius:12px;
+    min-height:42px;padding:8px 12px;color:#efffef;
+    background:rgba(4,28,30,.8);backdrop-filter:blur(10px);
+    font-size:12px;font-weight:800;pointer-events:auto;
+  }
+  .scene-toggle:disabled{opacity:.55;cursor:not-allowed}
+  .scene.camera-ready{cursor:zoom-in}
+  .scene.immersive{cursor:zoom-out}
+  body.immersive-open{overflow:hidden}
+  .scene.immersive,.scene:fullscreen{
+    position:fixed;inset:0;z-index:9999;
+    width:100vw;max-width:none;height:100dvh;
+    max-height:none;min-height:0;margin:0;border-radius:0;
+  }
+  .scene.immersive .top,.scene:fullscreen .top{
+    top:max(15px, env(safe-area-inset-top));
+  }
+  .scene.immersive .scene-toggle,.scene:fullscreen .scene-toggle{
+    top:calc(max(15px, env(safe-area-inset-top)) + 61px);
+  }
+  .scene.immersive .scene-bottom,.scene:fullscreen .scene-bottom{
+    bottom:max(16px,env(safe-area-inset-bottom));
+  }
+  .scene.immersive .direction,.scene:fullscreen .direction{top:49%}
+  @media(max-height:540px) and (orientation:landscape){
+    .scene.immersive .ring,.scene:fullscreen .ring{width:102px;height:102px;margin-bottom:5px}
+    .scene.immersive #arrow,.scene:fullscreen #arrow{width:70px;height:70px}
+    .scene.immersive .direction,.scene:fullscreen .direction{top:50%}
+    .scene.immersive #directionText,.scene:fullscreen #directionText{font-size:18px;margin-bottom:2px}
+    .scene.immersive .dist,.scene:fullscreen .dist{font-size:16px}
+    .scene.immersive .micro,.scene:fullscreen .micro{font-size:10px;margin-top:3px}
+    .scene.immersive .scene-bottom,.scene:fullscreen .scene-bottom{bottom:6px}
+    .scene.immersive .scene-stat,.scene:fullscreen .scene-stat{padding:6px 9px}
+    .scene.immersive .scene-toggle,.scene:fullscreen .scene-toggle{top:14px;right:14px}
+    .scene.immersive .top,.scene:fullscreen .top{left:14px;right:138px}
+    .scene.immersive .tag,.scene:fullscreen .tag{display:none}
+  }
   @media(min-width:600px){.shell{box-shadow:0 0 100px #0008}.scene{height:55vh}}
   </style>
 </head>
 <body>
 <main class="shell">
-<section class="scene" aria-label="Augmented directional guidance preview">
+<section class="scene" id="arScene" aria-label="Augmented directional guidance preview. Tap the camera preview to expand or collapse it.">
  <video id="camera" autoplay muted playsinline></video><div class="shade"></div>
- <div class="top"><div><p class="eyebrow">Prototype 0.3 · Fishing AR Lab</p><h1>Waypoint Navigator</h1></div><div id="modeBadge" class="tag demo">● DEMO</div></div>
+ <div class="top"><div><p class="eyebrow">Prototype 0.3.1 · Fishing AR Lab</p><h1>Waypoint Navigator</h1></div><div id="modeBadge" class="tag demo">● DEMO</div></div>
  <div class="direction"><div class="ring"><svg id="arrow" viewBox="0 0 100 100" role="img" aria-label="Direction arrow"><path d="M50 3L95 65 63 57 63 94 37 94 37 57 5 65Z" fill="#bafa92" stroke="#102f28" stroke-width="3" stroke-linejoin="round"/></svg></div><h2 id="directionText">Turn right</h2><p id="distanceText" class="dist">280 ft away</p><div id="signalText" class="micro">Simulated guidance · not a real route</div></div>
+ <button id="viewToggle" class="scene-toggle" disabled type="button" title="Start camera first" aria-label="Expand AR camera view">⛶ Full-screen AR</button>
  <div class="scene-bottom"><div class="scene-stat"><b id="targetTitle">Practice waypoint</b><small>Selected destination</small></div><div class="scene-stat"><b id="headingTitle">—</b><small>Compass heading</small></div></div>
 </section>
 <section class="panel">
@@ -62,7 +112,7 @@
  <p class="sub" id="modeHelp">Explore the interface without permissions. Adjust the simulated direction below to see how the arrow responds.</p>
  <div class="actions"><button class="btn primary" id="cameraBtn">📷 Start camera</button><button class="btn" id="gpsBtn">◎ Enable GPS</button></div>
  <div class="status" id="status" role="status" aria-live="polite">Demo mode is active. The distance and direction are fictional practice values.</div>
- <div class="card" id="deviceCheck"><h2>Device readiness · v0.3</h2><div class="readout"><div><span>Page connection</span><strong id="connectionValue">Checking…</strong></div><div><span>Camera</span><strong id="cameraValue">Off</strong></div><div><span>GPS</span><strong id="gpsValue">Not started</strong></div><div><span>Compass</span><strong id="headingStatus">Not started</strong></div></div><p id="httpsHelp">Demo and community buttons work from a downloaded file. Real camera, GPS, and sensors need an HTTPS-hosted version and browser permissions. No hosting or location uploads are included.</p></div>
+ <div class="card" id="deviceCheck"><h2>Device readiness · v0.3.1</h2><div class="readout"><div><span>Page connection</span><strong id="connectionValue">Checking…</strong></div><div><span>Camera</span><strong id="cameraValue">Off</strong></div><div><span>GPS</span><strong id="gpsValue">Not started</strong></div><div><span>Compass</span><strong id="headingStatus">Not started</strong></div></div><p id="httpsHelp">Demo and community buttons work from a downloaded file. Real camera, GPS, and sensors need an HTTPS-hosted version and browser permissions. No hosting or location uploads are included.</p></div>
  <div id="demoControls" class="card controls active"><h2>Practice the directional arrow</h2><label for="demoHeading">Simulated direction your phone faces: <span id="demoAngleText">0°</span></label><input type="range" min="0" max="359" step="1" value="0" id="demoHeading"><label for="demoDistance">Simulated distance: <span id="demoDistText">280 ft</span></label><input type="range" min="20" max="1800" step="10" value="280" id="demoDistance"><p>Try rotating the direction slider. The destination is simulated at 70° northeast; the arrow rotates relative to your simulated heading.</p></div>
  <div id="liveControls" class="controls">
    <div class="card"><h2>Live device readings</h2><div class="readout"><div><span>GPS accuracy</span><strong id="accuracyValue">Not available</strong></div><div><span>Phone heading</span><strong id="compassValue">Not available</strong></div></div><p>Use outdoors in a safe, open place for clearer location and compass readings. Device heading may need calibration and varies by browser.</p></div>
@@ -169,11 +219,55 @@
  $('demoBtn').addEventListener('click',()=>setMode('demo'));$('liveBtn').addEventListener('click',()=>setMode('live'));
  $('demoHeading').addEventListener('input',e=>{state.demoHeading=Number(e.target.value);$('demoAngleText').textContent=state.demoHeading+'°';redraw();});
  $('demoDistance').addEventListener('input',e=>{state.demoDistance=Number(e.target.value);$('demoDistText').textContent=state.demoDistance+' ft';redraw();});
+
+  const arScene=$('arScene'),viewToggle=$('viewToggle');
+  let immersive=false,nativeFullscreen=false;
+  function refreshCameraView(){
+    arScene.classList.toggle('camera-ready',Boolean(state.cameraStream));
+    viewToggle.disabled=!state.cameraStream;
+    viewToggle.textContent=immersive?'✕ Exit full screen':'⛶ Full-screen AR';
+    viewToggle.setAttribute('aria-label',immersive?'Exit full-screen camera view':'Expand AR camera view');
+    viewToggle.title=state.cameraStream?(immersive?'Return to navigation controls':'Expand the live AR camera'):'Start camera first';
+  }
+  function exitCameraView(){
+    immersive=false;
+    arScene.classList.remove('immersive');
+    document.body.classList.remove('immersive-open');
+    refreshCameraView();
+    if(document.fullscreenElement===arScene && document.exitFullscreen)
+      document.exitFullscreen().catch(()=>{});
+  }
+  async function enterCameraView(){
+    if(!state.cameraStream)return;
+    immersive=true;
+    arScene.classList.add('immersive');
+    document.body.classList.add('immersive-open');
+    refreshCameraView();
+    if(arScene.requestFullscreen){
+      try{await arScene.requestFullscreen({navigationUI:'hide'});}
+      catch(_){/* Immersive CSS fallback stays active if native fullscreen is blocked. */}
+    }
+  }
+  function toggleCameraView(){
+    if(!state.cameraStream)return;
+    if(immersive)exitCameraView();else enterCameraView();
+  }
+  viewToggle.addEventListener('click',e=>{e.stopPropagation();toggleCameraView();});
+  arScene.addEventListener('click',e=>{
+    if(state.cameraStream && !e.target.closest('button'))toggleCameraView();
+  });
+  document.addEventListener('fullscreenchange',()=>{
+    if(document.fullscreenElement===arScene)nativeFullscreen=true;
+    else if(nativeFullscreen){nativeFullscreen=false;if(immersive)exitCameraView();}
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&immersive)exitCameraView();});
+  refreshCameraView();
+
  $('cameraBtn').addEventListener('click',async()=>{
-  if(state.cameraStream){state.cameraStream.getTracks().forEach(t=>t.stop());state.cameraStream=null;$('camera').classList.remove('on');$('camera').srcObject=null;$('cameraBtn').textContent='📷 Start camera';state.cameraStatus='Off';readiness();say('Camera stopped.');return;}
+  if(state.cameraStream){exitCameraView();state.cameraStream.getTracks().forEach(t=>t.stop());state.cameraStream=null;$('camera').classList.remove('on');$('camera').srcObject=null;$('cameraBtn').textContent='📷 Start camera';state.cameraStatus='Off';readiness();refreshCameraView();say('Camera stopped.');return;}
   if(!secureWeb()){state.cameraStatus='Requires HTTPS';readiness();say('Camera preview needs an HTTPS-hosted version, not the extracted index.html file. Demo still works.','error');return;}
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){state.cameraStatus='Unsupported';readiness();say('Camera access is not supported by this browser.','error');return;}
-  try{const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});state.cameraStream=stream;$('camera').srcObject=stream;$('camera').classList.add('on');$('cameraBtn').textContent='◼ Stop camera';state.cameraStatus='Preview active';readiness();say('Camera started. This arrow is a 2D overlay, not an anchored AR object.','ok');}
+  try{const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});state.cameraStream=stream;$('camera').srcObject=stream;$('camera').classList.add('on');$('cameraBtn').textContent='◼ Stop camera';state.cameraStatus='Preview active';readiness();refreshCameraView();say('Camera started. This arrow is a 2D overlay, not an anchored AR object.','ok');}
   catch(err){state.cameraStatus='Blocked / error';readiness();say('Camera unavailable or permission declined: '+(err.message||err.name),'error');}
  });
  async function startCompass(){
